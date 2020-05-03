@@ -23,6 +23,7 @@ void main()
 {
    //ADC
    setup_adc_ports(sAN0);
+   setup_adc_ports(sAN1);
    setup_adc(ADC_CLOCK_INTERNAL);
    //Interrupciones
    enable_interrupts(global);
@@ -36,7 +37,7 @@ void main()
    delay_ms(1000);
    //FSM
    estado='0';
-   float temperatura;
+   float temperatura,presion;
    while(TRUE)
    {
       switch(estado){
@@ -59,10 +60,11 @@ void main()
          }
          break;
          case '2':
+         presion=pressureMPX4250();
          lcd_gotoxy(1,1);
          printf(lcd_putc," Sensor MPX4250 ");
          lcd_gotoxy(1,2);
-         printf(lcd_putc," Valor %c       ",ch);
+         printf(lcd_putc,"Presion=%03.0f Pa\n",presion);
          if(ch=='9'){
          estado='0';
          }
@@ -137,4 +139,15 @@ float tempLM35(){
        temp=(500.0*adc)/1024.0;
        delay_ms(500);
        return temp;
+}
+
+float pressureMPX4250(){
+       float pressure;
+       int16 adc;
+       set_adc_channel(1);
+       delay_us(20);
+       adc=read_adc();
+       pressure=adc/3.988;
+       delay_ms(500);
+       return pressure;
 }
