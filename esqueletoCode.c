@@ -17,6 +17,22 @@
 #define LCD_DATA7 PIN_D7
 char ch='0',estado='0';
 
+#INT_CCP1
+void CCP1_isr()
+{
+   if (flag==0)
+   {
+      set_timer1(55);//Empezar contador
+      flag=1;
+   }else
+   {
+      captura=CCP_1;
+      flag=0;
+   }
+   
+   clear_interrupt(INT_CCP1);
+}
+
 #int_rda
 void serial_isr(){
    ch=getchar();
@@ -36,7 +52,12 @@ void main()
    setup_adc(ADC_CLOCK_INTERNAL);
    //Interrupciones
    enable_interrupts(global);
+   enable_interrupts(PERIPH);
    enable_interrupts(int_rda);
+   enable_interrupts(INT_CCP1);//Activar interrupciones por ccp1
+   //Timer1
+   setup_timer_1(T1_INTERNAL|T1_DIV_BY_1);
+   setup_ccp1(CCP_CAPTURE_RE);
    //LCD instrucciones iniciales
    lcd_init();
    lcd_gotoxy(1,1);
@@ -47,6 +68,7 @@ void main()
    //FSM
    estado='0';
    float temperatura,presion;
+   int16 freq=0;
    while(TRUE)
    {
       switch(estado){
@@ -98,10 +120,12 @@ void main()
          }
          break;
          case '5':
+         freq=(1000000/captura);
          lcd_gotoxy(1,1);
          printf(lcd_putc," Frecuencia     ");
          lcd_gotoxy(1,2);
-         printf(lcd_putc," Valor %c       ",ch);
+         printf(lcd_putc," freq=%04lu Hz",freq);
+         delay_ms(500);
          if(ch=='9'){
          estado='0';
          }
