@@ -1,6 +1,13 @@
 #include <esqueletoCode.h>
-#use rs232(baud=9600,xmit=pin_c6,rcv=pin_c7, bits=8, parity=N)
+#use rs232(baud=9600,parity=N,xmit=PIN_C6,rcv=PIN_C7,bits=8)
+#use i2c(Master,fast,sda=PIN_C4,scl=PIN_C3)
+
 #include<LCD.C>
+#include "EEPROM_24512.c"     //Ficheros driver de los periféricos
+#include "TEMP_ds1621.c"
+#include <floatee.c>
+#include <float.h>
+
 #define LCD_ENABLE_PIN PIN_D0
 #define LCD_RS_PIN PIN_D1
 #define LCD_RW_PIN PIN_D2
@@ -18,6 +25,8 @@ void serial_isr(){
 }
 
 float tempLM35();
+float pressureMPX4250();
+void tempI2C();
 
 void main()
 {
@@ -70,10 +79,11 @@ void main()
          }
          break;
          case '3':
+         tempI2C();
          lcd_gotoxy(1,1);
          printf(lcd_putc," Sensor DS1621  ");
-         lcd_gotoxy(1,2);
-         printf(lcd_putc," Valor %c       ",ch);
+         //lcd_gotoxy(1,2);
+         //printf(lcd_putc," Valor %c       ",ch);
          if(ch=='9'){
          estado='0';
          }
@@ -150,4 +160,18 @@ float pressureMPX4250(){
        pressure=adc/3.988;
        delay_ms(500);
        return pressure;
+}
+
+void tempI2C(){
+      int16 address=0;
+      float dato;
+      init_temp(0x01);      //Inicializa el DS1621
+      delay_ms(100);
+      dato = read_full_temp(0x01);  //Lee temperatura del DS1621
+      WRITE_FLOAT_EXT_EEPROM(address,dato);  //Guarda 4 bytes del FLOAT
+      address=address+4;
+      lcd_gotoxy(1,2);
+      printf(lcd_putc,"Temp=%4.1f C\n",dato);  //Visualiza en LCD la temperatura
+      if (address==0xffff) address=0;
+      delay_ms(200);
 }
